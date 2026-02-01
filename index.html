@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Valentine</title>
+
+<style>
+:root{
+  --bg1:#b3001b;
+  --bg2:#ff0a54;
+  --yes:#ff0000;
+}
+
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  background:
+    radial-gradient(900px 520px at 20% 15%, rgba(255,255,255,.20), transparent 55%),
+    radial-gradient(900px 520px at 80% 0%, rgba(0,0,0,.20), transparent 55%),
+    linear-gradient(135deg,var(--bg1),var(--bg2));
+}
+
+/* ---------- SFONDI ---------- */
+.layer{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  overflow:hidden;
+}
+.item{
+  position:absolute;
+  bottom:-60px;
+  animation: floatUp linear infinite;
+  will-change: transform, opacity;
+}
+@keyframes floatUp{
+  from{ transform:translateY(0) translateX(0); opacity:0;}
+  10%{opacity:1;}
+  to{ transform:translateY(-115vh) translateX(50px); opacity:0;}
+}
+
+/* ---- CARD ---- */
+.card{
+  width:520px;
+  max-width:92vw;
+  background: rgba(255,255,255,.92);
+  border-radius:18px;
+  padding:24px;
+  text-align:center;
+  box-shadow: 0 18px 45px rgba(0,0,0,.22);
+  position:relative;
+}
+
+/* fade-out quando clicchi YES */
+.card.hide{
+  opacity:0;
+  transform: scale(.98);
+  transition: opacity .35s ease, transform .35s ease;
+  pointer-events:none;
+}
+
+h1{
+  margin:0 0 14px;
+  font-size:26px;
+  color:#ff0000; /* Matteo... in rosso */
+}
+
+.buttons{
+  position:relative;
+  height:160px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.row{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+}
+
+/* placeholder per evitare sovrapposizione iniziale */
+.yes-slot{
+  width: 86px;
+  height: 44px;
+}
+
+button{
+  padding:12px 18px;
+  border-radius:16px;
+  border:1px solid rgba(0,0,0,.12);
+  font-weight:900;
+  cursor:pointer;
+  user-select:none;
+  line-height:1;
+}
+
+/* YES: piccolo e scappa */
+#yes{
+  background:var(--yes);
+  color:#fff;
+  border:none;
+  font-size:16px;
+  padding:10px 18px;
+  border-radius:14px;
+  transition: transform 140ms ease;
+  will-change: transform;
+}
+
+#yes.fleeing{
+  position:absolute;
+  left:0;
+  top:0;
+}
+
+#yes.big{
+  font-size:34px;
+  padding:22px 44px;
+  border-radius:28px;
+}
+
+/* NO: più grande di YES all'inizio */
+#no{
+  background:#eee;
+  font-size:22px;
+  padding:18px 34px;
+  border-radius:22px;
+}
+
+/* opzionale: quando YES diventa grande, ridimensioniamo NO per bilanciare */
+#no.after{
+  font-size:18px;
+  padding:14px 24px;
+  border-radius:18px;
+}
+
+.hint{
+  display:none;              /* appare un attimo dopo */
+  margin-top:10px;
+  font-size:13px;
+  font-weight:800;
+  color:#666;
+}
+
+.success,.danger{
+  display:none;
+  margin-top:14px;
+  font-weight:900;
+  font-size:18px;
+}
+.danger{ color:#000; }
+
+/* immagine overlay (rimane anche se la card sparisce) */
+#imgOverlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+}
+#imgOverlay img{
+  max-width:55%;
+  height:auto;
+  display:block;
+}
+
+/* testo premio overlay */
+#winText{
+  position:fixed;
+  bottom:10%;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:28px;
+  font-weight:900;
+  color:white;
+  text-shadow:0 6px 18px rgba(0,0,0,.4);
+  display:none;
+  pointer-events:none;
+}
+</style>
+</head>
+
+<body>
+  <div class="layer" id="hearts"></div>
+  <div class="layer" id="party"></div>
+  <div class="layer" id="gorilla"></div>
+
+  <div class="card" id="card">
+    <h1>Matteo will you be my Valentine?</h1>
+
+    <div class="buttons" id="arena">
+      <div class="row" id="row">
+        <div class="yes-slot" id="yesSlot"></div>
+        <button id="no">No</button>
+        <button id="yes">Yes</button>
+      </div>
+    </div>
+
+    <div class="hint" id="hint">"Yes" è timido 😈 (ci vuole pazienza come con te 😇)</div>
+
+    <div class="success" id="success"> Hai vinto un regalo! (Oltre a me? 😛)</div>
+    <div class="danger" id="deadLucy">Lucy MORTA </div>
+  </div>
+
+  <!-- overlay fuori dalla card -->
+  <div id="imgOverlay">
+    <img id="resultImg" src="foto_new.png" alt="surprise">
+  </div>
+  <div id="winText">Hai vinto un regalo! (Oltre a me? 😛)</div>
+
+<script>
+const arena = document.getElementById("arena");
+const row = document.getElementById("row");
+const card = document.getElementById("card");
+
+const yesBtn = document.getElementById("yes");
+const yesSlot = document.getElementById("yesSlot");
+const noBtn = document.getElementById("no");
+
+const deadLucy = document.getElementById("deadLucy");
+const hint = document.getElementById("hint");
+
+const imgOverlay = document.getElementById("imgOverlay");
+const winText = document.getElementById("winText");
+
+const heartsLayer = document.getElementById("hearts");
+const partyLayer  = document.getElementById("party");
+const gorillaLayer= document.getElementById("gorilla");
+
+/* helper spawn */
+function spawn(layer, emoji, sizeMin, sizeMax, speedMin, speedMax){
+  const e = document.createElement("div");
+  e.className = "item";
+  e.textContent = emoji;
+  e.style.left = Math.random()*100 + "vw";
+  e.style.fontSize = (sizeMin + Math.random()*(sizeMax-sizeMin)).toFixed(0) + "px";
+  e.style.animationDuration = (speedMin + Math.random()*(speedMax-speedMin)).toFixed(2) + "s";
+  layer.appendChild(e);
+  setTimeout(()=>e.remove(), 12000);
+}
+
+/* cuori iniziali */
+setInterval(()=>spawn(heartsLayer,"🤍",14,28,6,10), 550);
+
+/* PARTY (molto più denso) */
+const PARTY_EMOJIS = ["🎉","🎁","🍾","🥳","🎊","✨","🤩","💥","⭐️","🎈","🥰","💫"];
+let partyInt = null;
+let gorillaInt = null;
+
+function clearLayer(layer){
+  while(layer.firstChild) layer.removeChild(layer.firstChild);
+}
+
+function startParty(){
+  heartsLayer.style.display = "none";
+  gorillaLayer.style.display = "none";
+  partyLayer.style.display = "block";
+
+  if (gorillaInt) { clearInterval(gorillaInt); gorillaInt = null; }
+  clearLayer(gorillaLayer);
+
+  if (partyInt) return;
+
+  for (let i=0;i<120;i++){
+    const em = PARTY_EMOJIS[Math.floor(Math.random()*PARTY_EMOJIS.length)];
+    spawn(partyLayer, em, 22, 56, 3.8, 7.2);
+  }
+
+  partyInt = setInterval(()=>{
+    for (let k=0;k<3;k++){
+      const em = PARTY_EMOJIS[Math.floor(Math.random()*PARTY_EMOJIS.length)];
+      spawn(partyLayer, em, 22, 56, 3.8, 7.2);
+    }
+  }, 90);
+}
+
+/* gorilla NO */
+function startGorilla(){
+  heartsLayer.style.display = "none";
+  partyLayer.style.display  = "none";
+  gorillaLayer.style.display= "block";
+
+  if (partyInt) { clearInterval(partyInt); partyInt = null; }
+  clearLayer(partyLayer);
+
+  if (gorillaInt) return;
+
+  for (let i=0;i<60;i++){
+    spawn(gorillaLayer,"🦍",32,76,5.2,9);
+  }
+  gorillaInt = setInterval(()=>{
+    spawn(gorillaLayer,"🦍",32,76,5.2,9);
+  }, 80);
+}
+
+/* ===== YES: centrato + fuga smooth ===== */
+let yesLocked = true;
+
+function alignYesToSlot(){
+  const slotRect = yesSlot.getBoundingClientRect();
+  const rowRect  = row.getBoundingClientRect();
+
+  const b = yesBtn.getBoundingClientRect();
+  yesSlot.style.width  = b.width + "px";
+  yesSlot.style.height = b.height + "px";
+
+  yesBtn.classList.add("fleeing");
+  yesBtn.style.left = (slotRect.left - rowRect.left) + "px";
+  yesBtn.style.top  = (slotRect.top  - rowRect.top ) + "px";
+}
+
+function flee(){
+  if(!yesLocked) return;
+
+  const arenaRect = arena.getBoundingClientRect();
+  const rowRect   = row.getBoundingClientRect();
+  const b         = yesBtn.getBoundingClientRect();
+  const pad = 10;
+
+  const maxX = Math.max(0, arenaRect.width  - b.width  - pad);
+  const maxY = Math.max(0, arenaRect.height - b.height - pad);
+
+  const targetLeft = pad + Math.random() * maxX;
+  const targetTop  = pad + Math.random() * maxY;
+
+  const rowToArenaX = rowRect.left - arenaRect.left;
+  const rowToArenaY = rowRect.top  - arenaRect.top;
+
+  yesBtn.style.left = (targetLeft - rowToArenaX) + "px";
+  yesBtn.style.top  = (targetTop  - rowToArenaY) + "px";
+}
+
+yesBtn.addEventListener("mouseenter", flee);
+yesBtn.addEventListener("mousemove", flee);
+yesBtn.addEventListener("mousedown", (e)=>{
+  if(yesLocked){
+    e.preventDefault();
+    e.stopPropagation();
+    flee();
+  }
+});
+yesBtn.addEventListener("touchstart", (e)=>{
+  if(yesLocked){
+    e.preventDefault();
+    e.stopPropagation();
+    flee();
+  }
+},{passive:false});
+
+/* hint dopo un attimo (salviamo il timer per poterlo annullare) */
+const hintTimer = setTimeout(()=>{ hint.style.display = "block"; }, 2500);
+
+/* dopo 20s YES diventa grande, cliccabile e centrato con NO */
+setTimeout(()=>{
+  yesLocked = false;
+
+  yesBtn.classList.remove("fleeing");
+  yesBtn.style.left = "";
+  yesBtn.style.top  = "";
+  yesBtn.classList.add("big");
+
+  // YES a sinistra di NO
+  row.insertBefore(yesBtn, noBtn);
+
+  // elimina lo spazio fantasma
+  yesSlot.style.display = "none";
+
+  // riduci NO dopo, così il focus resta su YES grande
+  noBtn.classList.add("after");
+
+  hint.style.display = "none";
+}, 20000);
+
+/* CLICK YES */
+yesBtn.addEventListener("click", (e)=>{
+  if(yesLocked){
+    e.preventDefault();
+    e.stopPropagation();
+    flee();
+    return;
+  }
+
+  clearTimeout(hintTimer);
+  hint.style.display = "none";
+
+  deadLucy.style.display = "none";
+
+  imgOverlay.style.display = "flex";
+  winText.style.display = "block";
+
+  startParty();
+
+  // fai sparire la card
+  card.classList.add("hide");
+});
+
+/* CLICK NO */
+noBtn.addEventListener("click", ()=>{
+  clearTimeout(hintTimer);
+  hint.style.display = "none";
+
+  deadLucy.style.display = "block";
+  imgOverlay.style.display = "none";
+  winText.style.display = "none";
+  startGorilla();
+});
+
+/* init */
+function init(){
+  alignYesToSlot();
+}
+window.addEventListener("load", init);
+window.addEventListener("resize", ()=>{ if(yesLocked) alignYesToSlot(); });
+init();
+</script>
+
+</body>
+</html>
+
