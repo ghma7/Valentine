@@ -174,11 +174,11 @@ button{
   height:auto;
 }
 
-/* ===== ERRORE (piccolo) ===== */
+/* ===== ERRORE (ORA PIÙ GRANDE) ===== */
 #errorImg{
   display:none;
-  width:110px;
-  max-width:40vw;
+  width:260px;          /* <<< più grande */
+  max-width:70vw;       /* <<< più grande */
   height:auto;
   filter: drop-shadow(0 12px 22px rgba(0,0,0,.35));
 }
@@ -505,24 +505,27 @@ function enterYesError(){
   hint.style.display = "none";
   deadLucy.style.display = "none";
 
-  // overlay ON e cliccabile
+  // NASCONDI i bottoni sotto (come richiesto)
+  arena.style.display = "none";
+
+  // overlay: prima reset, poi attiva (ordine corretto)
+  hideOverlayAll();
   imgOverlay.style.display = "flex";
   imgOverlay.style.pointerEvents = "auto";
 
   // mostra error UI
-  hideOverlayAll();
   errorImg.style.display = "block";
   errorText.style.display = "block";
   errorEmojis.style.display = "block";
 
-  // bottone sorry dopo un attimo
+  // delay per "Sono molto dispiaciuto"
   sorryBtn.style.display = "none";
   errorYesBtn.style.display = "none";
 
   if (sorryDelayTimer) clearTimeout(sorryDelayTimer);
   sorryDelayTimer = setTimeout(()=>{
     sorryBtn.style.display = "inline-flex";
-  }, 900);
+  }, 1500); // <<< DELAY (modifica qui)
 }
 
 /* quando clicchi "Sono molto dispiaciuto": deve restare SOLO YES */
@@ -542,12 +545,11 @@ function afterSorryShowOnlyYes(){
 
 /* ===== SUCCESS FLOW ===== */
 function runSuccessFlow(){
-  // overlay ON e cliccabile (non serve, ma ok)
+  // overlay ON
+  hideOverlayAll();
   imgOverlay.style.display = "flex";
   imgOverlay.style.pointerEvents = "none";
 
-  // reset overlay, poi mostra gif + testo
-  hideOverlayAll();
   winText.textContent = "Hai vinto un regalo!";
   winText.style.display = "block";
   gifImg.style.display = "block";
