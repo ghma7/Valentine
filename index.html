@@ -158,9 +158,9 @@ button{
   display:none;
   align-items:center;
   justify-content:center;
-  pointer-events:none; /* lo rendiamo cliccabile solo quando serve */
+  pointer-events:none; /* cliccabile solo in modalità errore */
   flex-direction:column;
-  gap:16px;
+  gap:14px;
 }
 
 /* GIF */
@@ -170,26 +170,28 @@ button{
   height:auto;
 }
 
-/* ===== ERRORE: IMMAGINE + TESTO ===== */
+/* ===== ERRORE (piccolo) ===== */
 #errorImg{
   display:none;
-  max-width:80%;
+  width:110px;       /* molto più piccola */
+  max-width:40vw;
   height:auto;
+  filter: drop-shadow(0 12px 22px rgba(0,0,0,.35));
 }
 #errorText{
   display:none;
-  font-size:30px;
+  font-size:22px;
   font-weight:900;
   color:white;
-  background:black;
-  padding:12px 22px;
+  background:rgba(0,0,0,.92);
+  padding:10px 16px;
   border-radius:10px;
-  text-shadow:0 0 10px red;
+  text-shadow:0 0 10px rgba(255,0,0,.7);
   text-align:center;
 }
 #errorEmojis{
   display:none;
-  font-size:38px;
+  font-size:34px;
   filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
 }
 #sorryBtn{
@@ -249,13 +251,13 @@ button{
     <div class="danger" id="deadLucy">Lucy MORTA</div>
   </div>
 
-  <!-- overlay: GIF / ERRORE (solo per YES prima volta) / CUORE + testo -->
+  <!-- overlay -->
   <div id="imgOverlay">
     <img id="gifImg" src="funny-celebrate-56.gif" alt="gif">
 
     <img id="errorImg" src="error.png" alt="error screen">
-    <div id="errorText">Error</div>
-    <div id="errorEmojis">😈💀😡👹</div>
+    <div id="errorText">An error occured</div>
+    <div id="errorEmojis">😈😡💀👹</div>
     <button id="sorryBtn">Sono molto dispiaciuto</button>
 
     <div id="heartWrap" aria-label="heart photo">
@@ -399,7 +401,7 @@ let promoteYesTimer = null;
 /* FLAG: errore su YES solo la prima volta */
 let yesErrorShownOnce = false;
 
-/* salva stato "normale" (posizione/ordine/visual) per ripristino */
+/* timer hint + promozione YES */
 function armNormalTimers(){
   if (hintTimer) clearTimeout(hintTimer);
   if (promoteYesTimer) clearTimeout(promoteYesTimer);
@@ -485,41 +487,47 @@ yesBtn.addEventListener("touchstart", (e)=>{
   }
 },{passive:false});
 
-/* ===== MODALITÀ ERRORE SOLO SU YES (prima volta) =====
-   - toglie Lucy MORTA
-   - nasconde bottoni YES/NO
-   - mostra immagine errore + testo + emoji + bottone "Sono molto dispiaciuto"
-   - clic su "Sono molto dispiaciuto" ripristina NORMAL e permette di scegliere YES
+/* ===== ERRORE SOLO SU YES (prima volta) =====
+   - testo: "An error occured ok"
+   - immagine piccola (CSS già fatto)
+   - bottone "Sono molto dispiaciuto" appare dopo un attimo
 */
+let sorryDelayTimer = null;
+
 function enterYesFirstTimeError(){
   disarmNormalTimers();
 
-  // togli testi fastidiosi
   deadLucy.style.display = "none";
   hint.style.display = "none";
 
-  // nascondi bottoni
+  // nascondi bottoni (solo mentre c'è errore)
   yesBtn.style.display = "none";
   noBtn.style.display  = "none";
   yesSlot.style.display = "none";
 
-  // overlay cliccabile
   imgOverlay.style.display = "flex";
   imgOverlay.style.pointerEvents = "auto";
 
-  // set contenuti errore
-  errorText.textContent = "Proposta ritirata";
-  errorEmojis.textContent = "😈😡💀👹🧨";
+  errorText.textContent = "An error occured ok";
+  errorEmojis.textContent = "😈😡💀👹";
 
   errorImg.style.display = "block";
   errorText.style.display = "block";
   errorEmojis.style.display = "block";
-  sorryBtn.style.display = "inline-flex";
+
+  // bottone dopo un attimo
+  sorryBtn.style.display = "none";
+  if (sorryDelayTimer) clearTimeout(sorryDelayTimer);
+  sorryDelayTimer = setTimeout(()=>{
+    sorryBtn.style.display = "inline-flex";
+  }, 900);
 }
 
 /* ripristina UI normale dopo scuse */
 function restoreNormalAfterSorry(){
-  // spegni overlay
+  if (sorryDelayTimer) clearTimeout(sorryDelayTimer);
+  sorryDelayTimer = null;
+
   imgOverlay.style.display = "none";
   hideOverlayAll();
 
@@ -527,27 +535,21 @@ function restoreNormalAfterSorry(){
   yesBtn.style.display = "";
   noBtn.style.display  = "";
 
-  // ripristina ordine "normale" e stato iniziale (YES che scappa)
-  // (row contiene yesSlot + noBtn + yesBtn)
+  // ripristina ordine base: yesSlot + no + yes
   if (row.contains(yesBtn)) row.removeChild(yesBtn);
   if (row.contains(noBtn)) row.removeChild(noBtn);
-  // yesSlot rimane dov'è
-
   row.appendChild(noBtn);
   row.appendChild(yesBtn);
 
-  // reset class
   noBtn.classList.remove("after");
   yesBtn.classList.remove("big");
   yesBtn.classList.remove("fleeing");
   yesBtn.style.left = "";
   yesBtn.style.top  = "";
 
-  // riattiva slot
   yesSlot.style.display = "block";
-
-  // riparte fase iniziale
   yesLocked = true;
+
   alignYesToSlot();
   armNormalTimers();
 
@@ -563,14 +565,6 @@ sorryBtn.addEventListener("click", (e)=>{
   restoreNormalAfterSorry();
 });
 
-/* dopo 20s YES diventa grande, cliccabile e centrato con NO */
-function armNormalFlow(){
-  // assicurati che YES sia iniziale
-  yesLocked = true;
-  alignYesToSlot();
-  armNormalTimers();
-}
-
 /* CLICK YES */
 yesBtn.addEventListener("click", (e)=>{
   if(yesLocked){
@@ -580,14 +574,14 @@ yesBtn.addEventListener("click", (e)=>{
     return;
   }
 
-  // PRIMA VOLTA: mostra errore + scuse, poi ripristina normale
+  // PRIMA VOLTA: errore + bottone scuse dopo un attimo
   if (!yesErrorShownOnce){
     yesErrorShownOnce = true;
     enterYesFirstTimeError();
     return;
   }
 
-  // DALLA SECONDA VOLTA IN POI: comportamento "normale" (party + GIF + cuore)
+  // DALLA SECONDA VOLTA IN POI: party + GIF + cuore
   disarmNormalTimers();
   hint.style.display = "none";
   deadLucy.style.display = "none";
@@ -600,7 +594,6 @@ yesBtn.addEventListener("click", (e)=>{
   heartWrap.style.display = "none";
 
   startParty();
-
   card.classList.add("hide");
 
   setTimeout(()=>{
@@ -609,14 +602,13 @@ yesBtn.addEventListener("click", (e)=>{
   }, 4000);
 });
 
-/* CLICK NO: come prima (ripristinalo come prima) */
+/* CLICK NO: come prima (nessun "sono dispiaciuto") */
 noBtn.addEventListener("click", ()=>{
   disarmNormalTimers();
   hint.style.display = "none";
 
   deadLucy.style.display = "block";
 
-  // niente errore su NO: nascondi overlay e testo
   imgOverlay.style.display = "none";
   hideOverlayAll();
 
@@ -625,9 +617,10 @@ noBtn.addEventListener("click", ()=>{
 
 /* init */
 function init(){
-  // stato iniziale
   card.classList.remove("hide");
-  armNormalFlow();
+  yesLocked = true;
+  alignYesToSlot();
+  armNormalTimers();
 }
 window.addEventListener("load", init);
 window.addEventListener("resize", ()=>{ if(yesLocked) alignYesToSlot(); });
@@ -636,4 +629,5 @@ init();
 
 </body>
 </html>
+
 
