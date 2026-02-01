@@ -134,7 +134,7 @@ button{
   border-radius:22px;
 }
 
-/* opzionale: quando YES diventa grande, ridimensioniamo NO per bilanciare */
+/* quando YES diventa grande, ridimensioniamo NO per bilanciare */
 #no.after{
   font-size:18px;
   padding:14px 24px;
@@ -157,7 +157,7 @@ button{
 }
 .danger{ color:#000; }
 
-/* immagine overlay (rimane anche se la card sparisce) */
+/* overlay fuori dalla card */
 #imgOverlay{
   position:fixed;
   inset:0;
@@ -165,25 +165,34 @@ button{
   align-items:center;
   justify-content:center;
   pointer-events:none;
+  flex-direction:column;
+  gap:16px;
 }
-#imgOverlay img{
+
+/* GIF */
+#gifImg{
+  display:none;
   max-width:55%;
   height:auto;
-  display:block;
+}
+
+/* Foto a cuore */
+#heartImg{
+  display:none;
+  max-width:55%;
+  height:auto;
+
+  /* cuore via clip-path (supportato su browser moderni) */
+  clip-path: path("M300,550 C50,350 0,200 150,100 C250,40 300,120 300,120 C300,120 350,40 450,100 C600,200 550,350 300,550 Z");
 }
 
 /* testo premio overlay */
 #winText{
-  position:fixed;
-  bottom:10%;
-  left:50%;
-  transform:translateX(-50%);
   font-size:28px;
   font-weight:900;
   color:white;
   text-shadow:0 6px 18px rgba(0,0,0,.4);
   display:none;
-  pointer-events:none;
 }
 </style>
 </head>
@@ -206,15 +215,17 @@ button{
 
     <div class="hint" id="hint">"Yes" è timido 😈 (ci vuole pazienza come con te 😇)</div>
 
-    <div class="success" id="success"> Hai vinto un regalo! (Oltre a me? 😛)</div>
-    <div class="danger" id="deadLucy">Lucy MORTA </div>
+    <div class="success" id="success">Hai vinto un regalo! (Oltre a me? 😛)</div>
+    <div class="danger" id="deadLucy">Lucy MORTA</div>
   </div>
 
-  <!-- overlay fuori dalla card -->
+  <!-- overlay: prima GIF, poi foto a cuore + testo -->
   <div id="imgOverlay">
-    <img id="resultImg" src="funny-celebrate-56.gif" alt="surprise">
+    <!-- cambia i nomi file qui -->
+    <img id="gifImg" src="amore.gif" alt="gif">
+    <img id="heartImg" src="foto_new.png" alt="heart photo">
+    <div id="winText">Hai vinto un regalo (Oltre a me?)</div>
   </div>
-  <div id="winText">Hai vinto un regalo! (Oltre a me? 😛)</div>
 
 <script>
 const arena = document.getElementById("arena");
@@ -229,6 +240,8 @@ const deadLucy = document.getElementById("deadLucy");
 const hint = document.getElementById("hint");
 
 const imgOverlay = document.getElementById("imgOverlay");
+const gifImg = document.getElementById("gifImg");
+const heartImg = document.getElementById("heartImg");
 const winText = document.getElementById("winText");
 
 const heartsLayer = document.getElementById("hearts");
@@ -242,13 +255,25 @@ function spawn(layer, emoji, sizeMin, sizeMax, speedMin, speedMax){
   e.textContent = emoji;
   e.style.left = Math.random()*100 + "vw";
   e.style.fontSize = (sizeMin + Math.random()*(sizeMax-sizeMin)).toFixed(0) + "px";
+  e.style.animationDuration = (speedMin + Math.random()*(speedMax-speedMax)).toFixed(2) + "s"; // (typo prevented below)
+  layer.appendChild(e);
+  setTimeout(()=>e.remove(), 12000);
+}
+
+/* FIX: correct animation duration calculation */
+function spawnSafe(layer, emoji, sizeMin, sizeMax, speedMin, speedMax){
+  const e = document.createElement("div");
+  e.className = "item";
+  e.textContent = emoji;
+  e.style.left = Math.random()*100 + "vw";
+  e.style.fontSize = (sizeMin + Math.random()*(sizeMax-sizeMin)).toFixed(0) + "px";
   e.style.animationDuration = (speedMin + Math.random()*(speedMax-speedMin)).toFixed(2) + "s";
   layer.appendChild(e);
   setTimeout(()=>e.remove(), 12000);
 }
 
 /* cuori iniziali */
-setInterval(()=>spawn(heartsLayer,"🤍",14,28,6,10), 550);
+setInterval(()=>spawnSafe(heartsLayer,"🤍",14,28,6,10), 550);
 
 /* PARTY (molto più denso) */
 const PARTY_EMOJIS = ["🎉","🎁","🍾","🥳","🎊","✨","🤩","💥","⭐️","🎈","🥰","💫"];
@@ -269,17 +294,17 @@ function startParty(){
 
   if (partyInt) return;
 
-  for (let i=0;i<120;i++){
+  for (let i=0;i<160;i++){
     const em = PARTY_EMOJIS[Math.floor(Math.random()*PARTY_EMOJIS.length)];
-    spawn(partyLayer, em, 22, 56, 3.8, 7.2);
+    spawnSafe(partyLayer, em, 22, 60, 3.6, 7.0);
   }
 
   partyInt = setInterval(()=>{
-    for (let k=0;k<3;k++){
+    for (let k=0;k<4;k++){
       const em = PARTY_EMOJIS[Math.floor(Math.random()*PARTY_EMOJIS.length)];
-      spawn(partyLayer, em, 22, 56, 3.8, 7.2);
+      spawnSafe(partyLayer, em, 22, 60, 3.6, 7.0);
     }
-  }, 90);
+  }, 80);
 }
 
 /* gorilla NO */
@@ -294,10 +319,10 @@ function startGorilla(){
   if (gorillaInt) return;
 
   for (let i=0;i<60;i++){
-    spawn(gorillaLayer,"🦍",32,76,5.2,9);
+    spawnSafe(gorillaLayer,"🦍",32,76,5.2,9);
   }
   gorillaInt = setInterval(()=>{
-    spawn(gorillaLayer,"🦍",32,76,5.2,9);
+    spawnSafe(gorillaLayer,"🦍",32,76,5.2,9);
   }, 80);
 }
 
@@ -355,7 +380,7 @@ yesBtn.addEventListener("touchstart", (e)=>{
   }
 },{passive:false});
 
-/* hint dopo un attimo (salviamo il timer per poterlo annullare) */
+/* hint dopo un attimo (annullabile) */
 const hintTimer = setTimeout(()=>{ hint.style.display = "block"; }, 2500);
 
 /* dopo 20s YES diventa grande, cliccabile e centrato con NO */
@@ -390,16 +415,26 @@ yesBtn.addEventListener("click", (e)=>{
 
   clearTimeout(hintTimer);
   hint.style.display = "none";
-
   deadLucy.style.display = "none";
 
+  // overlay visibile
   imgOverlay.style.display = "flex";
   winText.style.display = "block";
+
+  // 1) mostra GIF
+  gifImg.style.display = "block";
+  heartImg.style.display = "none";
 
   startParty();
 
   // fai sparire la card
   card.classList.add("hide");
+
+  // 2) dopo 4s mostra foto a cuore
+  setTimeout(()=>{
+    gifImg.style.display = "none";
+    heartImg.style.display = "block";
+  }, 4000);
 });
 
 /* CLICK NO */
@@ -408,8 +443,13 @@ noBtn.addEventListener("click", ()=>{
   hint.style.display = "none";
 
   deadLucy.style.display = "block";
+
+  // nascondi overlay e testo
   imgOverlay.style.display = "none";
   winText.style.display = "none";
+  gifImg.style.display = "none";
+  heartImg.style.display = "none";
+
   startGorilla();
 });
 
@@ -424,4 +464,3 @@ init();
 
 </body>
 </html>
-
