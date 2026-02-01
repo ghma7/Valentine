@@ -67,7 +67,7 @@ body{
 h1{
   margin:0 0 14px;
   font-size:26px;
-  color:#ff0000; /* Matteo... in rosso */
+  color:#ff0000;
 }
 
 .buttons{
@@ -142,7 +142,7 @@ button{
 }
 
 .hint{
-  display:none;              /* appare un attimo dopo */
+  display:none;
   margin-top:10px;
   font-size:13px;
   font-weight:800;
@@ -176,14 +176,17 @@ button{
   height:auto;
 }
 
-/* Foto a cuore */
-#heartImg{
+/* HEART SVG wrapper */
+#heartWrap{
   display:none;
-  max-width:55%;
-  height:auto;
-
-  /* cuore via clip-path (supportato su browser moderni) */
-  clip-path: path("M300,550 C50,350 0,200 150,100 C250,40 300,120 300,120 C300,120 350,40 450,100 C600,200 550,350 300,550 Z");
+  width:min(420px, 70vw);
+  aspect-ratio: 1 / 1;
+  filter: drop-shadow(0 14px 30px rgba(0,0,0,.25));
+}
+#heartSvg{
+  width:100%;
+  height:100%;
+  display:block;
 }
 
 /* testo premio overlay */
@@ -214,16 +217,42 @@ button{
     </div>
 
     <div class="hint" id="hint">"Yes" è timido 😈 (ci vuole pazienza come con te 😇)</div>
-
     <div class="success" id="success">Hai vinto un regalo! (Oltre a me? 😛)</div>
     <div class="danger" id="deadLucy">Lucy MORTA</div>
   </div>
 
-  <!-- overlay: prima GIF, poi foto a cuore + testo -->
+  <!-- overlay: prima GIF, poi FOTO A CUORE (SVG mask) + testo -->
   <div id="imgOverlay">
-    <!-- cambia i nomi file qui -->
     <img id="gifImg" src="funny-celebrate-56.gif" alt="gif">
-    <img id="heartImg" src="foto_new.png" alt="heart photo">
+
+    <!-- foto a cuore: cambia solo href qui sotto se cambi file -->
+    <div id="heartWrap" aria-label="heart photo">
+      <svg id="heartSvg" viewBox="0 0 100 100" role="img">
+        <defs>
+          <!-- Maschera cuore -->
+          <clipPath id="heartClip" clipPathUnits="objectBoundingBox">
+            <!-- cuore in coordinate 0..1 -->
+            <path d="
+              M 0.50 0.92
+              C 0.20 0.72, 0.02 0.50, 0.18 0.30
+              C 0.30 0.14, 0.46 0.18, 0.50 0.30
+              C 0.54 0.18, 0.70 0.14, 0.82 0.30
+              C 0.98 0.50, 0.80 0.72, 0.50 0.92
+              Z" />
+          </clipPath>
+        </defs>
+
+        <!-- immagine ritagliata dentro il cuore -->
+        <image
+          id="heartPhoto"
+          href="foto_new.png"
+          x="0" y="0" width="100" height="100"
+          preserveAspectRatio="xMidYMid slice"
+          clip-path="url(#heartClip)"
+        />
+      </svg>
+    </div>
+
     <div id="winText">Hai vinto un regalo (Oltre a me?)</div>
   </div>
 
@@ -241,7 +270,7 @@ const hint = document.getElementById("hint");
 
 const imgOverlay = document.getElementById("imgOverlay");
 const gifImg = document.getElementById("gifImg");
-const heartImg = document.getElementById("heartImg");
+const heartWrap = document.getElementById("heartWrap");
 const winText = document.getElementById("winText");
 
 const heartsLayer = document.getElementById("hearts");
@@ -255,25 +284,13 @@ function spawn(layer, emoji, sizeMin, sizeMax, speedMin, speedMax){
   e.textContent = emoji;
   e.style.left = Math.random()*100 + "vw";
   e.style.fontSize = (sizeMin + Math.random()*(sizeMax-sizeMin)).toFixed(0) + "px";
-  e.style.animationDuration = (speedMin + Math.random()*(speedMax-speedMax)).toFixed(2) + "s"; // (typo prevented below)
-  layer.appendChild(e);
-  setTimeout(()=>e.remove(), 12000);
-}
-
-/* FIX: correct animation duration calculation */
-function spawnSafe(layer, emoji, sizeMin, sizeMax, speedMin, speedMax){
-  const e = document.createElement("div");
-  e.className = "item";
-  e.textContent = emoji;
-  e.style.left = Math.random()*100 + "vw";
-  e.style.fontSize = (sizeMin + Math.random()*(sizeMax-sizeMin)).toFixed(0) + "px";
   e.style.animationDuration = (speedMin + Math.random()*(speedMax-speedMin)).toFixed(2) + "s";
   layer.appendChild(e);
   setTimeout(()=>e.remove(), 12000);
 }
 
 /* cuori iniziali */
-setInterval(()=>spawnSafe(heartsLayer,"🤍",14,28,6,10), 550);
+setInterval(()=>spawn(heartsLayer,"🤍",14,28,6,10), 550);
 
 /* PARTY (molto più denso) */
 const PARTY_EMOJIS = ["🎉","🎁","🍾","🥳","🎊","✨","🤩","💥","⭐️","🎈","🥰","💫"];
@@ -296,13 +313,13 @@ function startParty(){
 
   for (let i=0;i<160;i++){
     const em = PARTY_EMOJIS[Math.floor(Math.random()*PARTY_EMOJIS.length)];
-    spawnSafe(partyLayer, em, 22, 60, 3.6, 7.0);
+    spawn(partyLayer, em, 22, 60, 3.6, 7.0);
   }
 
   partyInt = setInterval(()=>{
     for (let k=0;k<4;k++){
       const em = PARTY_EMOJIS[Math.floor(Math.random()*PARTY_EMOJIS.length)];
-      spawnSafe(partyLayer, em, 22, 60, 3.6, 7.0);
+      spawn(partyLayer, em, 22, 60, 3.6, 7.0);
     }
   }, 80);
 }
@@ -319,10 +336,10 @@ function startGorilla(){
   if (gorillaInt) return;
 
   for (let i=0;i<60;i++){
-    spawnSafe(gorillaLayer,"🦍",32,76,5.2,9);
+    spawn(gorillaLayer,"🦍",32,76,5.2,9);
   }
   gorillaInt = setInterval(()=>{
-    spawnSafe(gorillaLayer,"🦍",32,76,5.2,9);
+    spawn(gorillaLayer,"🦍",32,76,5.2,9);
   }, 80);
 }
 
@@ -423,17 +440,17 @@ yesBtn.addEventListener("click", (e)=>{
 
   // 1) mostra GIF
   gifImg.style.display = "block";
-  heartImg.style.display = "none";
+  heartWrap.style.display = "none";
 
   startParty();
 
   // fai sparire la card
   card.classList.add("hide");
 
-  // 2) dopo 4s mostra foto a cuore
+  // 2) dopo 4s mostra foto a cuore (SVG)
   setTimeout(()=>{
     gifImg.style.display = "none";
-    heartImg.style.display = "block";
+    heartWrap.style.display = "block";
   }, 4000);
 });
 
@@ -448,7 +465,7 @@ noBtn.addEventListener("click", ()=>{
   imgOverlay.style.display = "none";
   winText.style.display = "none";
   gifImg.style.display = "none";
-  heartImg.style.display = "none";
+  heartWrap.style.display = "none";
 
   startGorilla();
 });
