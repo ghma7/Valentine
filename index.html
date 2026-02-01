@@ -158,7 +158,7 @@ button{
   display:none;
   align-items:center;
   justify-content:center;
-  pointer-events:none; /* cliccabile solo in modalità errore */
+  pointer-events:none; /* cliccabile solo quando serve */
   flex-direction:column;
   gap:14px;
 }
@@ -207,7 +207,7 @@ button{
   box-shadow: 0 14px 30px rgba(0,0,0,.25);
 }
 
-/* YES “fermo” dentro overlay dopo l’errore */
+/* YES “fermo” dentro overlay (compare SOLO dopo click su sorry) */
 #errorYesBtn{
   display:none;
   pointer-events:auto;
@@ -273,9 +273,7 @@ button{
     <div id="errorText">An error occurred</div>
     <div id="errorEmojis">😈😡💀👹</div>
 
-    <!-- dopo un attimo -->
-    <button id="sorryBtn">Sono molto dispiaciuto 😭 </button>
-    <!-- poi compare YES fermo -->
+    <button id="sorryBtn">Sono molto dispiaciuto 😭</button>
     <button id="errorYesBtn">Yes</button>
 
     <div id="heartWrap" aria-label="heart photo">
@@ -303,7 +301,7 @@ button{
       </svg>
     </div>
 
-    <div id="winText">(Oltre a me?😛)</div>
+    <div id="winText">Hai vinto un regalo! (Oltre a me?😛)</div>
   </div>
 
 <script>
@@ -507,7 +505,7 @@ yesBtn.addEventListener("touchstart", (e)=>{
   }
 },{passive:false});
 
-/* ===== SUCCESS FLOW (party + gif + cuore) ===== */
+/* ===== SUCCESS FLOW (party + gif + cuore + testo) ===== */
 function runSuccessFlow(){
   disarmNormalTimers();
   hint.style.display = "none";
@@ -516,6 +514,8 @@ function runSuccessFlow(){
   imgOverlay.style.display = "flex";
   hideOverlayAll();
 
+  // 1) GIF + testo "Hai vinto un regalo!"
+  winText.textContent = "Hai vinto un regalo!";
   winText.style.display = "block";
   gifImg.style.display = "block";
   heartWrap.style.display = "none";
@@ -523,19 +523,20 @@ function runSuccessFlow(){
   startParty();
   card.classList.add("hide");
 
+  // 2) dopo 4s: cuore + testo "(Oltre a me?😛)"
   setTimeout(()=>{
     gifImg.style.display = "none";
     heartWrap.style.display = "block";
+    winText.textContent = "(Oltre a me?😛)";
   }, 4000);
 }
 
 /* ===== ERRORE SOLO SU YES (prima volta) =====
-   Dopo "An error occurred":
-   - dopo un attimo compare "Sono molto dispiaciuto"
-   - poi compare anche un YES fermo cliccabile (nel overlay)
+   - mostra "Sono molto dispiaciuto" dopo un attimo
+   - NON mostra "Yes" finché non clicchi sorry
+   - dopo click sorry: compare "Yes" fermo (cliccabile) nell’overlay
 */
 let sorryDelayTimer = null;
-let yesDelayTimer = null;
 
 function enterYesFirstTimeError(){
   disarmNormalTimers();
@@ -560,69 +561,41 @@ function enterYesFirstTimeError(){
 
   // reset bottoni overlay
   sorryBtn.style.display = "none";
-  errorYesBtn.style.display = "none";
+  errorYesBtn.style.display = "none"; // <<< importante: NO YES finché non clicchi sorry
 
   if (sorryDelayTimer) clearTimeout(sorryDelayTimer);
-  if (yesDelayTimer) clearTimeout(yesDelayTimer);
 
-  // 1) dopo un attimo: scuse
+  // dopo un attimo: scuse
   sorryDelayTimer = setTimeout(()=>{
     sorryBtn.style.display = "inline-flex";
   }, 900);
-
-  // 2) poi: YES fermo cliccabile
-  yesDelayTimer = setTimeout(()=>{
-    errorYesBtn.style.display = "inline-flex";
-  }, 1500);
 }
 
-/* clic su "Sono molto dispiaciuto": ripristina la card,
-   MA con YES già fermo/cliccabile (niente fuga) */
-function restoreNormalWithFixedYes(){
+/* clic su sorry:
+   - nasconde sorry
+   - mostra YES fermo nell'overlay
+*/
+function afterSorryShowYes(){
   if (sorryDelayTimer) clearTimeout(sorryDelayTimer);
-  if (yesDelayTimer) clearTimeout(yesDelayTimer);
   sorryDelayTimer = null;
-  yesDelayTimer = null;
 
-  imgOverlay.style.display = "none";
-  hideOverlayAll();
+  // sparisce il bottone scuse
+  sorryBtn.style.display = "none";
 
-  // ripristina bottoni nella card
-  yesBtn.style.display = "";
-  noBtn.style.display  = "";
-
-  // rimetti ordine: yesSlot + no + yes (poi lo portiamo subito in modalità "fermo")
-  if (row.contains(yesBtn)) row.removeChild(yesBtn);
-  if (row.contains(noBtn)) row.removeChild(noBtn);
-  row.appendChild(noBtn);
-  row.appendChild(yesBtn);
-
-  // porta subito YES in modalità "fermo" (come dopo i 20s)
-  yesLocked = false;
-  yesBtn.classList.remove("fleeing");
-  yesBtn.style.left = "";
-  yesBtn.style.top  = "";
-  yesBtn.classList.add("big");
-  row.insertBefore(yesBtn, noBtn);
-  yesSlot.style.display = "none";
-  noBtn.classList.add("after");
-
-  // niente hint
-  hint.style.display = "none";
+  // compare YES fermo
+  errorYesBtn.style.display = "inline-flex";
 }
 
-/* handlers overlay */
 sorryBtn.addEventListener("click", (e)=>{
   e.preventDefault();
   e.stopPropagation();
-  restoreNormalWithFixedYes();
+  afterSorryShowYes();
 });
 
-/* YES fermo nel overlay: va direttamente al finale */
+/* YES fermo nel overlay: va al finale */
 errorYesBtn.addEventListener("click", (e)=>{
   e.preventDefault();
   e.stopPropagation();
-  // (lascia pure la card nascosta dai bottoni: vai diretto al successo)
   runSuccessFlow();
 });
 
@@ -635,7 +608,7 @@ yesBtn.addEventListener("click", (e)=>{
     return;
   }
 
-  // PRIMA VOLTA: mostra errore + scuse (poi appare YES fermo nel overlay)
+  // PRIMA VOLTA: errore + scuse
   if (!yesErrorShownOnce){
     yesErrorShownOnce = true;
     enterYesFirstTimeError();
@@ -646,7 +619,7 @@ yesBtn.addEventListener("click", (e)=>{
   runSuccessFlow();
 });
 
-/* CLICK NO: come prima (nessun errore, niente scuse) */
+/* CLICK NO: come prima */
 noBtn.addEventListener("click", ()=>{
   disarmNormalTimers();
   hint.style.display = "none";
