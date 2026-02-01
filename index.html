@@ -505,8 +505,9 @@ function enterYesError(){
   hint.style.display = "none";
   deadLucy.style.display = "none";
 
-  // NASCONDI i bottoni sotto (come richiesto)
-  arena.style.display = "none";
+  // NASCONDI tutta la card (così niente sovrapposizioni col titolo)
+  card.style.display = "none";
+
 
   // overlay: prima reset, poi attiva (ordine corretto)
   hideOverlayAll();
