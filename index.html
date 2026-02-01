@@ -164,7 +164,7 @@ button{
   display:none;
   align-items:center;
   justify-content:center;
-  pointer-events:none;
+  pointer-events:none; /* di default non cliccabile, lo abilitiamo in modalità error */
   flex-direction:column;
   gap:16px;
 }
@@ -174,6 +174,45 @@ button{
   display:none;
   max-width:55%;
   height:auto;
+}
+
+/* ===== ERRORE: IMMAGINE + TESTO ===== */
+#errorImg{
+  display:none;
+  max-width:80%;
+  height:auto;
+}
+
+#errorText{
+  display:none;
+  font-size:30px;
+  font-weight:900;
+  color:white;
+  background:black;
+  padding:12px 22px;
+  border-radius:10px;
+  text-shadow:0 0 10px red;
+  text-align:center;
+}
+
+/* emoji cattive sotto al testo errore */
+#errorEmojis{
+  display:none;
+  font-size:38px;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+}
+
+/* bottone "Sono molto dispiaciuto" (clickable anche con overlay) */
+#sorryBtn{
+  display:none;
+  pointer-events:auto;
+  background:#fff;
+  color:#111;
+  border:2px solid rgba(0,0,0,.18);
+  font-size:18px;
+  padding:14px 20px;
+  border-radius:16px;
+  box-shadow: 0 14px 30px rgba(0,0,0,.25);
 }
 
 /* HEART SVG wrapper */
@@ -221,17 +260,21 @@ button{
     <div class="danger" id="deadLucy">Lucy MORTA</div>
   </div>
 
-  <!-- overlay: prima GIF, poi FOTO A CUORE (SVG mask) + testo -->
+  <!-- overlay: GIF/errore/foto cuore -->
   <div id="imgOverlay">
     <img id="gifImg" src="funny-celebrate-56.gif" alt="gif">
 
-    <!-- foto a cuore: cambia solo href qui sotto se cambi file -->
+    <!-- SCHERMATA ERRORE -->
+    <img id="errorImg" src="error.png" alt="error screen">
+    <div id="errorText">Error</div>
+    <div id="errorEmojis">😈💀😡👹</div>
+    <button id="sorryBtn">Sono molto dispiaciuto</button>
+
+    <!-- foto a cuore -->
     <div id="heartWrap" aria-label="heart photo">
       <svg id="heartSvg" viewBox="0 0 100 100" role="img">
         <defs>
-          <!-- Maschera cuore -->
           <clipPath id="heartClip" clipPathUnits="objectBoundingBox">
-            <!-- cuore in coordinate 0..1 -->
             <path d="
               M 0.50 0.92
               C 0.20 0.72, 0.02 0.50, 0.18 0.30
@@ -242,7 +285,6 @@ button{
           </clipPath>
         </defs>
 
-        <!-- immagine ritagliata dentro il cuore -->
         <image
           id="heartPhoto"
           href="foto_new.png"
@@ -273,6 +315,12 @@ const imgOverlay = document.getElementById("imgOverlay");
 const gifImg = document.getElementById("gifImg");
 const heartWrap = document.getElementById("heartWrap");
 const winText = document.getElementById("winText");
+
+/* ERRORE */
+const errorImg = document.getElementById("errorImg");
+const errorText = document.getElementById("errorText");
+const errorEmojis = document.getElementById("errorEmojis");
+const sorryBtn = document.getElementById("sorryBtn");
 
 const heartsLayer = document.getElementById("hearts");
 const partyLayer  = document.getElementById("party");
@@ -344,9 +392,134 @@ function startGorilla(){
   }, 80);
 }
 
-/* ===== YES: centrato + fuga smooth ===== */
-let yesLocked = true;
+/* ===== GESTIONE OVERLAY ===== */
+function hideOverlayStuff(){
+  gifImg.style.display = "none";
+  heartWrap.style.display = "none";
+  winText.style.display = "none";
 
+  errorImg.style.display = "none";
+  errorText.style.display = "none";
+  errorEmojis.style.display = "none";
+  sorryBtn.style.display = "none";
+
+  // overlay torna non cliccabile
+  imgOverlay.style.pointerEvents = "none";
+}
+
+/* ===== SCHERMATA ERRORE (con possibilità "Sono molto dispiaciuto") ===== */
+let errorMode = null; // "yes" | "no" | null
+
+function showError(message, emojis, mode){
+  errorMode = mode || null;
+
+  imgOverlay.style.display = "flex";
+  imgOverlay.style.pointerEvents = "auto"; // abilita click sul bottone
+
+  // spegni altro
+  gifImg.style.display = "none";
+  heartWrap.style.display = "none";
+  winText.style.display = "none";
+
+  // set contenuti errore
+  errorText.textContent = message;
+  errorEmojis.textContent = emojis || "😈💀😡👹";
+
+  errorImg.style.display = "block";
+  errorText.style.display = "block";
+  errorEmojis.style.display = "block";
+  sorryBtn.style.display = "inline-flex";
+}
+
+/* ===== RIPRISTINO "CODICE NORMALE" =====
+   - riporta la card
+   - riabilita YES/NO
+   - riparte lo stato iniziale con YES che scappa e dopo 20s diventa cliccabile
+*/
+let yesLocked = true;
+let hintTimer = null;
+let promoteYesTimer = null;
+
+function resetToNormal(){
+  // overlay off
+  hideOverlayStuff();
+  imgOverlay.style.display = "none";
+
+  // riporta layer default
+  heartsLayer.style.display = "block";
+  partyLayer.style.display = "none";
+  gorillaLayer.style.display = "none";
+
+  // ferma party/gorilla
+  if (partyInt) { clearInterval(partyInt); partyInt = null; }
+  if (gorillaInt){ clearInterval(gorillaInt); gorillaInt = null; }
+  clearLayer(partyLayer);
+  clearLayer(gorillaLayer);
+
+  // reset messaggi card
+  deadLucy.style.display = "none";
+  hint.style.display = "none";
+
+  // mostra card
+  card.classList.remove("hide");
+
+  // reset bottoni
+  yesBtn.classList.remove("big");
+  yesBtn.classList.remove("fleeing");
+  yesBtn.style.left = "";
+  yesBtn.style.top  = "";
+  yesSlot.style.display = "block";
+  noBtn.classList.remove("after");
+
+  // metti NO poi YES (ordine originale)
+  // (row contiene anche yesSlot: manteniamo yesSlot, poi NO, poi YES)
+  if (row.contains(yesBtn)) row.removeChild(yesBtn);
+  if (row.contains(noBtn)) row.removeChild(noBtn);
+
+  row.appendChild(noBtn);
+  row.appendChild(yesBtn);
+
+  // riparte fase "YES scappa"
+  yesLocked = true;
+  alignYesToSlot();
+
+  // reset timer
+  if (hintTimer) clearTimeout(hintTimer);
+  if (promoteYesTimer) clearTimeout(promoteYesTimer);
+
+  hintTimer = setTimeout(()=>{ hint.style.display = "block"; }, 2500);
+
+  promoteYesTimer = setTimeout(()=>{
+    yesLocked = false;
+
+    yesBtn.classList.remove("fleeing");
+    yesBtn.style.left = "";
+    yesBtn.style.top  = "";
+    yesBtn.classList.add("big");
+
+    // YES a sinistra di NO
+    row.insertBefore(yesBtn, noBtn);
+
+    // elimina lo spazio fantasma
+    yesSlot.style.display = "none";
+
+    // riduci NO dopo
+    noBtn.classList.add("after");
+
+    hint.style.display = "none";
+  }, 20000);
+
+  errorMode = null;
+}
+
+/* bottone "Sono molto dispiaciuto" */
+sorryBtn.addEventListener("click", (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  resetToNormal();
+});
+
+/* ===== YES: centrato + fuga smooth ===== */
 function alignYesToSlot(){
   const slotRect = yesSlot.getBoundingClientRect();
   const rowRect  = row.getBoundingClientRect();
@@ -398,29 +571,28 @@ yesBtn.addEventListener("touchstart", (e)=>{
   }
 },{passive:false});
 
-/* hint dopo un attimo (annullabile) */
-const hintTimer = setTimeout(()=>{ hint.style.display = "block"; }, 2500);
+/* inizializza i timer come prima */
+function armNormalTimers(){
+  if (hintTimer) clearTimeout(hintTimer);
+  if (promoteYesTimer) clearTimeout(promoteYesTimer);
 
-/* dopo 20s YES diventa grande, cliccabile e centrato con NO */
-setTimeout(()=>{
-  yesLocked = false;
+  hintTimer = setTimeout(()=>{ hint.style.display = "block"; }, 2500);
 
-  yesBtn.classList.remove("fleeing");
-  yesBtn.style.left = "";
-  yesBtn.style.top  = "";
-  yesBtn.classList.add("big");
+  promoteYesTimer = setTimeout(()=>{
+    yesLocked = false;
 
-  // YES a sinistra di NO
-  row.insertBefore(yesBtn, noBtn);
+    yesBtn.classList.remove("fleeing");
+    yesBtn.style.left = "";
+    yesBtn.style.top  = "";
+    yesBtn.classList.add("big");
 
-  // elimina lo spazio fantasma
-  yesSlot.style.display = "none";
+    row.insertBefore(yesBtn, noBtn);
+    yesSlot.style.display = "none";
+    noBtn.classList.add("after");
 
-  // riduci NO dopo, così il focus resta su YES grande
-  noBtn.classList.add("after");
-
-  hint.style.display = "none";
-}, 20000);
+    hint.style.display = "none";
+  }, 20000);
+}
 
 /* CLICK YES */
 yesBtn.addEventListener("click", (e)=>{
@@ -431,49 +603,34 @@ yesBtn.addEventListener("click", (e)=>{
     return;
   }
 
-  clearTimeout(hintTimer);
+  if (hintTimer) clearTimeout(hintTimer);
   hint.style.display = "none";
   deadLucy.style.display = "none";
 
-  // overlay visibile
-  imgOverlay.style.display = "flex";
-  winText.style.display = "block";
-
-  // 1) mostra GIF
-  gifImg.style.display = "block";
-  heartWrap.style.display = "none";
-
-  startParty();
-
-  // fai sparire la card
-  card.classList.add("hide");
-
-  // 2) dopo 4s mostra foto a cuore (SVG)
-  setTimeout(()=>{
-    gifImg.style.display = "none";
-    heartWrap.style.display = "block";
-  }, 4000);
+  // mostra errore + bottone di scuse per tornare al normale
+  showError("Proposta ritirata", "😈😡💀👹🧨", "yes");
 });
 
 /* CLICK NO */
 noBtn.addEventListener("click", ()=>{
-  clearTimeout(hintTimer);
+  if (hintTimer) clearTimeout(hintTimer);
   hint.style.display = "none";
 
   deadLucy.style.display = "block";
 
-  // nascondi overlay e testo
-  imgOverlay.style.display = "none";
-  winText.style.display = "none";
-  gifImg.style.display = "none";
-  heartWrap.style.display = "none";
+  // mostra errore + bottone di scuse
+  showError("Error: Matteo CATTIVO", "😈💀😡👹🦍", "no");
 
-  startGorilla();
+  // dopo 2.6s parte gorilla MA l'errore resta (finché non clicca "Sono molto dispiaciuto")
+  setTimeout(()=>{
+    startGorilla();
+  }, 2600);
 });
 
 /* init */
 function init(){
   alignYesToSlot();
+  armNormalTimers();
 }
 window.addEventListener("load", init);
 window.addEventListener("resize", ()=>{ if(yesLocked) alignYesToSlot(); });
@@ -482,3 +639,4 @@ init();
 
 </body>
 </html>
+
