@@ -36,7 +36,6 @@ body{
   position:absolute;
   bottom:-60px;
   animation: floatUp linear infinite;
-  will-change: transform, opacity;
 }
 @keyframes floatUp{
   from{ transform:translateY(0) translateX(0); opacity:0;}
@@ -53,7 +52,6 @@ body{
   padding:24px;
   text-align:center;
   box-shadow: 0 18px 45px rgba(0,0,0,.22);
-  position:relative;
 }
 .card.hide{
   opacity:0;
@@ -77,17 +75,10 @@ h1{
 }
 
 .row{
-  position:relative;
   display:flex;
   align-items:center;
   justify-content:center;
   gap:14px;
-}
-
-/* placeholder per evitare sovrapposizione iniziale */
-.yes-slot{
-  width: 86px;
-  height: 44px;
 }
 
 button{
@@ -96,530 +87,228 @@ button{
   border:1px solid rgba(0,0,0,.12);
   font-weight:900;
   cursor:pointer;
-  user-select:none;
-  line-height:1;
 }
 
-/* YES: piccolo e scappa */
 #yes{
   background:var(--yes);
   color:#fff;
   border:none;
-  font-size:16px;
-  padding:10px 18px;
-  border-radius:14px;
-  transition: transform 140ms ease;
-  will-change: transform;
-}
-#yes.fleeing{
-  position:absolute;
-  left:0;
-  top:0;
-}
-#yes.big{
-  font-size:34px;
-  padding:22px 44px;
-  border-radius:28px;
 }
 
-/* NO: più grande di YES all'inizio */
 #no{
   background:#eee;
   font-size:22px;
   padding:18px 34px;
-  border-radius:22px;
-}
-#no.after{
-  font-size:18px;
-  padding:14px 24px;
-  border-radius:18px;
 }
 
-.hint{
-  display:none;
-  margin-top:10px;
-  font-size:13px;
-  font-weight:800;
-  color:#666;
-}
-
-.success,.danger{
-  display:none;
-  margin-top:14px;
-  font-weight:900;
-  font-size:18px;
-}
-.danger{ color:#000; }
-
-/* overlay fuori dalla card */
+/* overlay */
 #imgOverlay{
   position:fixed;
   inset:0;
   display:none;
   align-items:center;
   justify-content:center;
-  pointer-events:none; /* cliccabile solo quando serve */
   flex-direction:column;
   gap:14px;
+  pointer-events:none;
 }
 
-/* GIF */
 #gifImg{
   display:none;
   max-width:55%;
-  height:auto;
 }
 
-/* ===== ERRORE (piccolo) ===== */
 #errorImg{
   display:none;
   width:110px;
-  max-width:40vw;
-  height:auto;
-  filter: drop-shadow(0 12px 22px rgba(0,0,0,.35));
 }
+
 #errorText{
   display:none;
   font-size:22px;
   font-weight:900;
   color:white;
-  background:rgba(0,0,0,.92);
+  background:black;
   padding:10px 16px;
   border-radius:10px;
-  text-shadow:0 0 10px rgba(255,0,0,.7);
-  text-align:center;
 }
+
 #errorEmojis{
   display:none;
   font-size:34px;
-  filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
 }
 
-#sorryBtn{
-  display:none;
-  pointer-events:auto;
-  background:#fff;
-  color:#111;
-  border:2px solid rgba(0,0,0,.18);
-  font-size:18px;
-  padding:14px 20px;
-  border-radius:16px;
-  box-shadow: 0 14px 30px rgba(0,0,0,.25);
-}
-
-/* YES “fermo” dentro overlay (compare SOLO dopo click su sorry) */
+#sorryBtn,
 #errorYesBtn{
   display:none;
   pointer-events:auto;
-  background:var(--yes);
-  color:#fff;
-  border:none;
-  font-size:22px;
-  padding:14px 28px;
-  border-radius:18px;
-  box-shadow: 0 14px 30px rgba(0,0,0,.25);
 }
 
-/* HEART SVG wrapper */
+#sorryBtn{
+  background:white;
+  font-size:18px;
+}
+
+#errorYesBtn{
+  background:red;
+  color:white;
+  border:none;
+}
+
 #heartWrap{
   display:none;
-  width:min(420px, 70vw);
-  aspect-ratio: 1 / 1;
-  filter: drop-shadow(0 14px 30px rgba(0,0,0,.25));
-}
-#heartSvg{
-  width:100%;
-  height:100%;
-  display:block;
+  width:min(420px,70vw);
 }
 
-/* testo premio overlay */
+#heartSvg{
+  width:100%;
+}
+
 #winText{
+  display:none;
   font-size:28px;
   font-weight:900;
   color:white;
-  text-shadow:0 6px 18px rgba(0,0,0,.4);
-  display:none;
 }
 </style>
 </head>
 
 <body>
-  <div class="layer" id="hearts"></div>
-  <div class="layer" id="party"></div>
-  <div class="layer" id="gorilla"></div>
 
-  <div class="card" id="card">
-    <h1>Matteo will you be my Valentine?</h1>
+<div class="layer" id="party"></div>
 
-    <div class="buttons" id="arena">
-      <div class="row" id="row">
-        <div class="yes-slot" id="yesSlot"></div>
-        <button id="no">No</button>
-        <button id="yes">Yes</button>
-      </div>
+<div class="card" id="card">
+  <h1>Matteo will you be my Valentine?</h1>
+
+  <div class="buttons">
+    <div class="row">
+      <button id="no">No</button>
+      <button id="yes">Yes</button>
     </div>
-
-    <div class="hint" id="hint">"Yes" è timido 😈 (ci vuole pazienza come con te 😇)</div>
-    <div class="success" id="success">Hai vinto un regalo!</div>
-    <div class="danger" id="deadLucy">Matteo MORTE</div>
   </div>
 
-  <!-- overlay -->
-  <div id="imgOverlay">
-    <img id="gifImg" src="funny-celebrate-56.gif" alt="gif">
-
-    <img id="errorImg" src="error.png" alt="error screen">
-    <div id="errorText">An error occurred — Proposta ritirata</div>
-    <div id="errorEmojis">😈😡💀👹</div>
-
-    <button id="sorryBtn">Sono molto dispiaciuto 😭</button>
-    <button id="errorYesBtn">Yes</button>
-
-    <div id="heartWrap" aria-label="heart photo">
-      <svg id="heartSvg" viewBox="0 0 100 100" role="img">
-        <defs>
-          <clipPath id="heartClip" clipPathUnits="objectBoundingBox">
-            <path d="
-              M 0.50 0.92
-              C 0.20 0.72, 0.02 0.50, 0.18 0.30
-              C 0.30 0.14, 0.46 0.18, 0.50 0.30
-              C 0.54 0.18, 0.70 0.14, 0.82 0.30
-              C 0.98 0.50, 0.80 0.72, 0.50 0.92
-              Z" />
-          </clipPath>
-        </defs>
-
-        <image
-          id="heartPhoto"
-          href="foto_new.png"
-          x="0" y="0" width="100" height="100"
-          preserveAspectRatio="xMidYMid meet"
-          clip-path="url(#heartClip)"
-          transform="translate(18 18) scale(0.64)"
-        />
-      </svg>
-    </div>
-
-    <div id="winText">Hai vinto un regalo! (Oltre a me?😛)</div>
+  <div id="deadLucy" style="display:none;font-weight:900;margin-top:10px;">
+    Matteo MORTE
   </div>
+</div>
+
+<div id="imgOverlay">
+  <img id="gifImg" src="funny-celebrate-56.gif">
+
+  <img id="errorImg" src="error.png">
+  <div id="errorText">An error occurred — Proposta ritirata</div>
+  <div id="errorEmojis">😈😡💀👹</div>
+
+  <button id="sorryBtn">Sono molto dispiaciuto 😭</button>
+  <button id="errorYesBtn">Yes</button>
+
+  <div id="heartWrap">
+    <svg id="heartSvg" viewBox="0 0 100 100">
+      <defs>
+        <clipPath id="heartClip" clipPathUnits="objectBoundingBox">
+          <path d="
+            M 0.50 0.92
+            C 0.20 0.72, 0.02 0.50, 0.18 0.30
+            C 0.30 0.14, 0.46 0.18, 0.50 0.30
+            C 0.54 0.18, 0.70 0.14, 0.82 0.30
+            C 0.98 0.50, 0.80 0.72, 0.50 0.92
+            Z" />
+        </clipPath>
+      </defs>
+
+      <image
+        href="foto_new.png"
+        x="0" y="0" width="100" height="100"
+        preserveAspectRatio="xMidYMid meet"
+        clip-path="url(#heartClip)"
+        transform="translate(18 18) scale(0.64)"
+      />
+    </svg>
+  </div>
+
+  <div id="winText">Hai vinto un regalo!</div>
+</div>
 
 <script>
-const arena = document.getElementById("arena");
-const row = document.getElementById("row");
-const card = document.getElementById("card");
-
 const yesBtn = document.getElementById("yes");
-const yesSlot = document.getElementById("yesSlot");
 const noBtn = document.getElementById("no");
-
+const card = document.getElementById("card");
 const deadLucy = document.getElementById("deadLucy");
-const hint = document.getElementById("hint");
 
-const imgOverlay = document.getElementById("imgOverlay");
-const gifImg = document.getElementById("gifImg");
-const heartWrap = document.getElementById("heartWrap");
-const winText = document.getElementById("winText");
+const overlay = document.getElementById("imgOverlay");
+const gif = document.getElementById("gifImg");
 
 const errorImg = document.getElementById("errorImg");
 const errorText = document.getElementById("errorText");
 const errorEmojis = document.getElementById("errorEmojis");
+
 const sorryBtn = document.getElementById("sorryBtn");
 const errorYesBtn = document.getElementById("errorYesBtn");
 
-const heartsLayer = document.getElementById("hearts");
-const partyLayer  = document.getElementById("party");
-const gorillaLayer= document.getElementById("gorilla");
+const heartWrap = document.getElementById("heartWrap");
+const winText = document.getElementById("winText");
 
-/* helper spawn */
-function spawn(layer, emoji, sizeMin, sizeMax, speedMin, speedMax){
-  const e = document.createElement("div");
-  e.className = "item";
-  e.textContent = emoji;
-  e.style.left = Math.random()*100 + "vw";
-  e.style.fontSize = (sizeMin + Math.random()*(sizeMax-sizeMin)).toFixed(0) + "px";
-  e.style.animationDuration = (speedMin + Math.random()*(speedMax-speedMax)).toFixed(2) + "s";
-  layer.appendChild(e);
-  setTimeout(()=>e.remove(), 12000);
-}
+let firstYesClick = true;
 
-/* cuori iniziali */
-setInterval(()=>spawn(heartsLayer,"🤍",14,28,6,10), 550);
+/* YES */
+yesBtn.onclick = () => {
 
-/* PARTY */
-const PARTY_EMOJIS = ["🎉","🎁","🍾","🥳","🎊","✨","🤩","💥","⭐️","🎈","🥰","💫"];
-let partyInt = null;
-let gorillaInt = null;
+  if(firstYesClick){
+    firstYesClick = false;
 
-function clearLayer(layer){
-  while(layer.firstChild) layer.removeChild(layer.firstChild);
-}
+    overlay.style.display = "flex";
+    overlay.style.pointerEvents = "auto";
 
-function startParty(){
-  heartsLayer.style.display = "none";
-  gorillaLayer.style.display = "none";
-  partyLayer.style.display = "block";
+    errorImg.style.display = "block";
+    errorText.style.display = "block";
+    errorEmojis.style.display = "block";
 
-  if (gorillaInt) { clearInterval(gorillaInt); gorillaInt = null; }
-  clearLayer(gorillaLayer);
+    setTimeout(()=>{
+      sorryBtn.style.display = "inline-flex";
+    },1000);
 
-  if (partyInt) return;
-
-  for (let i=0;i<160;i++){
-    const em = PARTY_EMOJIS[Math.floor(Math.random()*PARTY_EMOJIS.length)];
-    spawn(partyLayer, em, 22, 60, 3.6, 7.0);
+    return;
   }
 
-  partyInt = setInterval(()=>{
-    for (let k=0;k<4;k++){
-      const em = PARTY_EMOJIS[Math.floor(Math.random()*PARTY_EMOJIS.length)];
-      spawn(partyLayer, em, 22, 60, 3.6, 7.0);
-    }
-  }, 80);
-}
+  runSuccess();
+};
 
-/* gorilla NO */
-function startGorilla(){
-  heartsLayer.style.display = "none";
-  partyLayer.style.display  = "none";
-  gorillaLayer.style.display= "block";
-
-  if (partyInt) { clearInterval(partyInt); partyInt = null; }
-  clearLayer(partyLayer);
-
-  if (gorillaInt) return;
-
-  for (let i=0;i<60;i++){
-    spawn(gorillaLayer,"🦍",32,76,5.2,9);
-  }
-  gorillaInt = setInterval(()=>{
-    spawn(gorillaLayer,"🦍",32,76,5.2,9);
-  }, 80);
-}
-
-function hideOverlayAll(){
-  gifImg.style.display = "none";
-  heartWrap.style.display = "none";
-  winText.style.display = "none";
+/* click sorry */
+sorryBtn.onclick = () => {
 
   errorImg.style.display = "none";
   errorText.style.display = "none";
   errorEmojis.style.display = "none";
   sorryBtn.style.display = "none";
-  errorYesBtn.style.display = "none";
 
-  imgOverlay.style.pointerEvents = "none";
-}
+  errorYesBtn.style.display = "inline-flex";
+};
 
-/* ===== YES: centrato + fuga smooth ===== */
-let yesLocked = true;
-let hintTimer = null;
-let promoteYesTimer = null;
-let yesErrorShownOnce = false;
+/* YES dopo scuse */
+errorYesBtn.onclick = () => {
+  runSuccess();
+};
 
-function armNormalTimers(){
-  if (hintTimer) clearTimeout(hintTimer);
-  if (promoteYesTimer) clearTimeout(promoteYesTimer);
+function runSuccess(){
+  overlay.style.display = "flex";
 
-  hintTimer = setTimeout(()=>{ hint.style.display = "block"; }, 2500);
-
-  promoteYesTimer = setTimeout(()=>{
-    yesLocked = false;
-
-    yesBtn.classList.remove("fleeing");
-    yesBtn.style.left = "";
-    yesBtn.style.top  = "";
-    yesBtn.classList.add("big");
-
-    row.insertBefore(yesBtn, noBtn);
-    yesSlot.style.display = "none";
-    noBtn.classList.add("after");
-    hint.style.display = "none";
-  }, 20000);
-}
-
-function disarmNormalTimers(){
-  if (hintTimer) clearTimeout(hintTimer);
-  if (promoteYesTimer) clearTimeout(promoteYesTimer);
-  hintTimer = null;
-  promoteYesTimer = null;
-}
-
-function alignYesToSlot(){
-  const slotRect = yesSlot.getBoundingClientRect();
-  const rowRect  = row.getBoundingClientRect();
-
-  const b = yesBtn.getBoundingClientRect();
-  yesSlot.style.width  = b.width + "px";
-  yesSlot.style.height = b.height + "px";
-
-  yesBtn.classList.add("fleeing");
-  yesBtn.style.left = (slotRect.left - rowRect.left) + "px";
-  yesBtn.style.top  = (slotRect.top  - rowRect.top ) + "px";
-}
-
-function flee(){
-  if(!yesLocked) return;
-
-  const arenaRect = arena.getBoundingClientRect();
-  const rowRect   = row.getBoundingClientRect();
-  const b         = yesBtn.getBoundingClientRect();
-  const pad = 10;
-
-  const maxX = Math.max(0, arenaRect.width  - b.width  - pad);
-  const maxY = Math.max(0, arenaRect.height - b.height - pad);
-
-  const targetLeft = pad + Math.random() * maxX;
-  const targetTop  = pad + Math.random() * maxY;
-
-  const rowToArenaX = rowRect.left - arenaRect.left;
-  const rowToArenaY = rowRect.top  - arenaRect.top;
-
-  yesBtn.style.left = (targetLeft - rowToArenaX) + "px";
-  yesBtn.style.top  = (targetTop  - rowToArenaY) + "px";
-}
-
-yesBtn.addEventListener("mouseenter", flee);
-yesBtn.addEventListener("mousemove", flee);
-yesBtn.addEventListener("mousedown", (e)=>{
-  if(yesLocked){
-    e.preventDefault();
-    e.stopPropagation();
-    flee();
-  }
-});
-yesBtn.addEventListener("touchstart", (e)=>{
-  if(yesLocked){
-    e.preventDefault();
-    e.stopPropagation();
-    flee();
-  }
-},{passive:false});
-
-/* ===== SUCCESS FLOW ===== */
-function runSuccessFlow(){
-  disarmNormalTimers();
-  hint.style.display = "none";
-  deadLucy.style.display = "none";
-
-  imgOverlay.style.display = "flex";
-  hideOverlayAll();
-
-  winText.textContent = "Hai vinto un regalo!";
-  winText.style.display = "block";
-  gifImg.style.display = "block";
-  heartWrap.style.display = "none";
-
-  startParty();
-  card.classList.add("hide");
+  errorYesBtn.style.display="none";
+  gif.style.display="block";
+  winText.style.display="block";
 
   setTimeout(()=>{
-    gifImg.style.display = "none";
-    heartWrap.style.display = "block";
-    winText.textContent = "(Oltre a me?😛)";
-  }, 4000);
+    gif.style.display="none";
+    heartWrap.style.display="block";
+    winText.innerText="(Oltre a me?😛)";
+  },4000);
+
+  card.classList.add("hide");
 }
 
-/* ===== ERRORE su YES (prima volta) ===== */
-let sorryDelayTimer = null;
-
-function enterYesFirstTimeError(){
-  disarmNormalTimers();
-  deadLucy.style.display = "none";
-  hint.style.display = "none";
-
-  yesBtn.style.display = "none";
-  noBtn.style.display  = "none";
-  yesSlot.style.display = "none";
-
-  imgOverlay.style.display = "flex";
-  imgOverlay.style.pointerEvents = "auto";
-
-  errorText.textContent = "An error occurred — Proposta ritirata";
-  errorEmojis.textContent = "😈😡💀👹";
-
-  errorImg.style.display = "block";
-  errorText.style.display = "block";
-  errorEmojis.style.display = "block";
-
-  sorryBtn.style.display = "none";
-  errorYesBtn.style.display = "none";
-
-  if (sorryDelayTimer) clearTimeout(sorryDelayTimer);
-  sorryDelayTimer = setTimeout(()=>{
-    sorryBtn.style.display = "inline-flex";
-  }, 900);
-}
-
-/* CLICK sorry:
-   - deve rimanere SOLO YES (no testo error, no immagine, no emoji) */
-function afterSorryShowOnlyYes(){
-  if (sorryDelayTimer) clearTimeout(sorryDelayTimer);
-  sorryDelayTimer = null;
-
-  // nascondi tutto l'errore
-  errorImg.style.display = "none";
-  errorText.style.display = "none";
-  errorEmojis.style.display = "none";
-  sorryBtn.style.display = "none";
-
-  // mostra solo YES nell'overlay
-  errorYesBtn.style.display = "inline-flex";
-}
-
-sorryBtn.addEventListener("click", (e)=>{
-  e.preventDefault();
-  e.stopPropagation();
-  afterSorryShowOnlyYes();
-});
-
-errorYesBtn.addEventListener("click", (e)=>{
-  e.preventDefault();
-  e.stopPropagation();
-  runSuccessFlow();
-});
-
-/* CLICK YES nella card */
-yesBtn.addEventListener("click", (e)=>{
-  if(yesLocked){
-    e.preventDefault();
-    e.stopPropagation();
-    flee();
-    return;
-  }
-
-  if (!yesErrorShownOnce){
-    yesErrorShownOnce = true;
-    enterYesFirstTimeError();
-    return;
-  }
-
-  runSuccessFlow();
-});
-
-/* CLICK NO: come prima */
-noBtn.addEventListener("click", ()=>{
-  disarmNormalTimers();
-  hint.style.display = "none";
-
-  deadLucy.style.display = "block";
-
-  imgOverlay.style.display = "none";
-  hideOverlayAll();
-
-  startGorilla();
-});
-
-/* init */
-function init(){
-  card.classList.remove("hide");
-  yesLocked = true;
-  alignYesToSlot();
-  armNormalTimers();
-}
-window.addEventListener("load", init);
-window.addEventListener("resize", ()=>{ if(yesLocked) alignYesToSlot(); });
-init();
+/* NO */
+noBtn.onclick = ()=>{
+  deadLucy.style.display="block";
+};
 </script>
 
 </body>
