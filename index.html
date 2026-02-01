@@ -173,7 +173,7 @@ button{
 /* ===== ERRORE (piccolo) ===== */
 #errorImg{
   display:none;
-  width:110px;       /* molto più piccola */
+  width:110px;
   max-width:40vw;
   height:auto;
   filter: drop-shadow(0 12px 22px rgba(0,0,0,.35));
@@ -270,7 +270,7 @@ button{
     <img id="gifImg" src="funny-celebrate-56.gif" alt="gif">
 
     <img id="errorImg" src="error.png" alt="error screen">
-    <div id="errorText">An error occurred</div>
+    <div id="errorText">An error occurred — Proposta ritirata</div>
     <div id="errorEmojis">😈😡💀👹</div>
 
     <button id="sorryBtn">Sono molto dispiaciuto 😭</button>
@@ -338,7 +338,7 @@ function spawn(layer, emoji, sizeMin, sizeMax, speedMin, speedMax){
   e.textContent = emoji;
   e.style.left = Math.random()*100 + "vw";
   e.style.fontSize = (sizeMin + Math.random()*(sizeMax-sizeMin)).toFixed(0) + "px";
-  e.style.animationDuration = (speedMin + Math.random()*(speedMax-speedMin)).toFixed(2) + "s";
+  e.style.animationDuration = (speedMin + Math.random()*(speedMax-speedMax)).toFixed(2) + "s";
   layer.appendChild(e);
   setTimeout(()=>e.remove(), 12000);
 }
@@ -378,7 +378,7 @@ function startParty(){
   }, 80);
 }
 
-/* gorilla NO (come prima) */
+/* gorilla NO */
 function startGorilla(){
   heartsLayer.style.display = "none";
   partyLayer.style.display  = "none";
@@ -415,11 +415,8 @@ function hideOverlayAll(){
 let yesLocked = true;
 let hintTimer = null;
 let promoteYesTimer = null;
-
-/* FLAG: errore su YES solo la prima volta */
 let yesErrorShownOnce = false;
 
-/* timer hint + promozione YES */
 function armNormalTimers(){
   if (hintTimer) clearTimeout(hintTimer);
   if (promoteYesTimer) clearTimeout(promoteYesTimer);
@@ -434,15 +431,9 @@ function armNormalTimers(){
     yesBtn.style.top  = "";
     yesBtn.classList.add("big");
 
-    // YES a sinistra di NO
     row.insertBefore(yesBtn, noBtn);
-
-    // elimina lo spazio fantasma
     yesSlot.style.display = "none";
-
-    // riduci NO dopo
     noBtn.classList.add("after");
-
     hint.style.display = "none";
   }, 20000);
 }
@@ -505,7 +496,7 @@ yesBtn.addEventListener("touchstart", (e)=>{
   }
 },{passive:false});
 
-/* ===== SUCCESS FLOW (party + gif + cuore + testo) ===== */
+/* ===== SUCCESS FLOW ===== */
 function runSuccessFlow(){
   disarmNormalTimers();
   hint.style.display = "none";
@@ -514,7 +505,6 @@ function runSuccessFlow(){
   imgOverlay.style.display = "flex";
   hideOverlayAll();
 
-  // 1) GIF + testo "Hai vinto un regalo!"
   winText.textContent = "Hai vinto un regalo!";
   winText.style.display = "block";
   gifImg.style.display = "block";
@@ -523,7 +513,6 @@ function runSuccessFlow(){
   startParty();
   card.classList.add("hide");
 
-  // 2) dopo 4s: cuore + testo "(Oltre a me?😛)"
   setTimeout(()=>{
     gifImg.style.display = "none";
     heartWrap.style.display = "block";
@@ -531,20 +520,14 @@ function runSuccessFlow(){
   }, 4000);
 }
 
-/* ===== ERRORE SOLO SU YES (prima volta) =====
-   - mostra "Sono molto dispiaciuto" dopo un attimo
-   - NON mostra "Yes" finché non clicchi sorry
-   - dopo click sorry: compare "Yes" fermo (cliccabile) nell’overlay
-*/
+/* ===== ERRORE su YES (prima volta) ===== */
 let sorryDelayTimer = null;
 
 function enterYesFirstTimeError(){
   disarmNormalTimers();
-
   deadLucy.style.display = "none";
   hint.style.display = "none";
 
-  // nascondi bottoni nella card mentre c'è errore
   yesBtn.style.display = "none";
   noBtn.style.display  = "none";
   yesSlot.style.display = "none";
@@ -552,47 +535,44 @@ function enterYesFirstTimeError(){
   imgOverlay.style.display = "flex";
   imgOverlay.style.pointerEvents = "auto";
 
-  errorText.textContent = "An error occurred";
+  errorText.textContent = "An error occurred — Proposta ritirata";
   errorEmojis.textContent = "😈😡💀👹";
 
   errorImg.style.display = "block";
   errorText.style.display = "block";
   errorEmojis.style.display = "block";
 
-  // reset bottoni overlay
   sorryBtn.style.display = "none";
-  errorYesBtn.style.display = "none"; // <<< importante: NO YES finché non clicchi sorry
+  errorYesBtn.style.display = "none";
 
   if (sorryDelayTimer) clearTimeout(sorryDelayTimer);
-
-  // dopo un attimo: scuse
   sorryDelayTimer = setTimeout(()=>{
     sorryBtn.style.display = "inline-flex";
   }, 900);
 }
 
-/* clic su sorry:
-   - nasconde sorry
-   - mostra YES fermo nell'overlay
-*/
-function afterSorryShowYes(){
+/* CLICK sorry:
+   - deve rimanere SOLO YES (no testo error, no immagine, no emoji) */
+function afterSorryShowOnlyYes(){
   if (sorryDelayTimer) clearTimeout(sorryDelayTimer);
   sorryDelayTimer = null;
 
-  // sparisce il bottone scuse
+  // nascondi tutto l'errore
+  errorImg.style.display = "none";
+  errorText.style.display = "none";
+  errorEmojis.style.display = "none";
   sorryBtn.style.display = "none";
 
-  // compare YES fermo
+  // mostra solo YES nell'overlay
   errorYesBtn.style.display = "inline-flex";
 }
 
 sorryBtn.addEventListener("click", (e)=>{
   e.preventDefault();
   e.stopPropagation();
-  afterSorryShowYes();
+  afterSorryShowOnlyYes();
 });
 
-/* YES fermo nel overlay: va al finale */
 errorYesBtn.addEventListener("click", (e)=>{
   e.preventDefault();
   e.stopPropagation();
@@ -608,14 +588,12 @@ yesBtn.addEventListener("click", (e)=>{
     return;
   }
 
-  // PRIMA VOLTA: errore + scuse
   if (!yesErrorShownOnce){
     yesErrorShownOnce = true;
     enterYesFirstTimeError();
     return;
   }
 
-  // DALLA SECONDA VOLTA: finale normale
   runSuccessFlow();
 });
 
